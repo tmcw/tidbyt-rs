@@ -1,0 +1,15 @@
+<html>
+<body>
+<img id="preview" src='example.webp' width="512" height="256" />
+<script>
+    function update() {
+        preview.src = `example.webp?x=${Date.now()}`
+    }
+    setInterval(update, 1000);
+</script>
+<style>
+    body { background-color: #555; }
+    img { image-rendering: pixelated; background: #000; }
+</style>
+</body>
+</html>
