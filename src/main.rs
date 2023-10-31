@@ -47,7 +47,7 @@ fn draw_text(
     color: &Source,
     align: TextAlign,
 ) -> Result<()> {
-    let tom_thumb = include_bytes!("../fonts/tom-thumb-2.bdf");
+    let tom_thumb = include_bytes!("../fonts/tb-8.bdf");
     let font: bdf::Font = bdf::read(&tom_thumb[..])?;
     let mut start = in_start.clone();
     let chars: Vec<char> = match align {
@@ -60,8 +60,6 @@ fn draw_text(
         // The tom-thumb font is monospace but some of the characters
         // don't take up the full bounding box. Offset them so that
         // they sit at the center of their bits.
-        let x_offset = (font.bounds().width - glyph.width() as u32) / 2;
-        let y_offset = (font.bounds().height - glyph.height() as u32) / 2;
 
         for px in glyph.pixels() {
             let x = px.0 .0;
@@ -69,8 +67,8 @@ fn draw_text(
             let white = px.1;
             if white {
                 dt.fill_rect(
-                    start.x + x as f32 + x_offset as f32,
-                    start.y + y as f32 + y_offset as f32,
+                    start.x + x as f32 + 0 as f32,
+                    start.y + y as f32 + 0 as f32,
                     1.,
                     1.,
                     color,
@@ -79,15 +77,23 @@ fn draw_text(
             }
         }
         start.x = start.x
-            + match c {
-                ' ' => 2.0,
-                _ => 4.0,
-            } * match align {
-                TextAlign::Left => 1.0,
-                TextAlign::Right => -1.0,
-            }
+            + advance(c)
+                * match align {
+                    TextAlign::Left => 1.0,
+                    TextAlign::Right => -1.0,
+                }
     }
     Ok(())
+}
+
+fn advance(c: char) -> f32 {
+    if c == ' ' {
+        return 2.0;
+    }
+    let tom_thumb = include_bytes!("../fonts/tb-8.bdf");
+    let font = bdf::read(&tom_thumb[..]);
+    let w = font.map(|f| f.glyphs().get(&c).map(|g| g.width()));
+    w.unwrap_or(Some(0)).unwrap_or(0) as f32
 }
 
 #[tokio::main]
@@ -128,14 +134,7 @@ impl TextWidget {
 
 impl Widget for TextWidget {
     fn measure(&self) -> Point {
-        let width: f32 = self
-            .text
-            .chars()
-            .map(|x| match x {
-                ' ' => 2.0,
-                _ => 4.0,
-            })
-            .sum();
+        let width: f32 = self.text.chars().map(|x| advance(x)).sum();
         Point::new(width, 5.0)
     }
     fn frame_count(&self) -> u32 {
@@ -369,7 +368,8 @@ async fn render(args: &Args) -> Result<()> {
     let mut encoder = AnimEncoder::new(width as u32, height as u32, &config);
 
     let (count, rec_chart) = get_email_count().await.unwrap_or((0, Vec::new()));
-    let (week_miles, miles_chart) = get_strava().await.unwrap_or((0.0, Vec::new()));
+    let (miles_today, week_miles, miles_chart) =
+        get_strava().await.unwrap_or((None, 0.0, Vec::new()));
 
     let layout = vstack![
         hstack![
@@ -381,7 +381,11 @@ async fn render(args: &Args) -> Result<()> {
             ChartWidget::new(&rec_chart)
         ],
         hstack![
-            TextWidget::new(format!("{:.0} RUN", week_miles), String::from("#fff")),
+            match miles_today {
+                None => TextWidget::new(String::from("RUN"), String::from("#fff")),
+                Some(mi) => TextWidget::new(format!("{:.0} MI", mi), String::from("#0f0")),
+            },
+            TextWidget::new(format!("{:.0} WK", week_miles), String::from("#fff")),
             ChartWidget::new(&miles_chart)
         ],
         hstack![get_aqi().await, get_uv().await]

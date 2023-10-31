@@ -161,7 +161,7 @@ pub mod strava {
 
     /// Get the number of unread threads in my inbox
     #[cached(time = 120, result = true)]
-    pub async fn get_strava() -> Result<(f64, Vec<u64>)> {
+    pub async fn get_strava() -> Result<(Option<f64>, f64, Vec<u64>)> {
         let tokens = fresh_token().await?;
         let resp: Activities = reqwest::Client::new()
             .get("https://www.strava.com/api/v3/athlete/activities")
@@ -194,6 +194,8 @@ pub mod strava {
             mi.push(val.miles.round() as u64);
         }
 
-        Ok((miles_total, mi))
+        let run_today = bins.first_entry().map(|entry| entry.get().miles);
+
+        Ok((run_today, miles_total, mi))
     }
 }
