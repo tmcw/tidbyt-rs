@@ -45,7 +45,7 @@ pub mod email {
     #[cached(time = 120, result = true)]
     pub async fn get_email_count() -> Result<(u64, Vec<u64>)> {
         let jmap_token = env::var("JMAP_TOKEN").expect("Missing JMAP_TOKEN");
-        let mut records = get_data().unwrap_or(Vec::new());
+        let mut records = get_data().unwrap_or_default();
 
         let client = Client::new()
             .credentials(Credentials::bearer(jmap_token))

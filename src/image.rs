@@ -30,7 +30,7 @@ pub mod image {
     OwnedImage that we can render with raquote
     */
     fn read_image(buf: &[u8]) -> Result<OwnedImage> {
-        let decoder = png::Decoder::new(&buf[..]);
+        let decoder = png::Decoder::new(buf);
         let mut reader = decoder.read_info().context("Could not get info")?;
 
         let mut email_icon_buffer = vec![0; reader.output_buffer_size()];

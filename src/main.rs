@@ -189,7 +189,7 @@ impl Widget for ChartWidget {
             dt.fill_rect(
                 pt.x,
                 pt.y + (self.height as f32) - h,
-                1 as f32,
+                1.0,
                 h,
                 &color,
                 &DrawOptions::new(),
@@ -232,10 +232,10 @@ impl Widget for HStack {
             .unwrap_or(1)
     }
     fn render(&self, dt: &mut DrawTarget, point: Point, frame: u32) -> Result<()> {
-        if self.items.len() == 0 {
+        if self.items.is_empty() {
         } else if self.items.len() == 1 {
             if let Some(item) = self.items.first() {
-                item.render(dt, point, frame);
+                item.render(dt, point, frame)?;
             }
         } else {
             let widths: Vec<u32> = self
@@ -247,7 +247,7 @@ impl Widget for HStack {
             let extra_room: i64 = WIDTH - total_content_size;
             let gap_count = (self.items.len() - 1) as i64;
             let mut spaces: Vec<f32> = Vec::new();
-            let space_between = extra_room / gap_count as i64;
+            let space_between = extra_room / gap_count;
             spaces.resize(self.items.len() - 1, space_between as f32);
             let total_size_with_gaps = total_content_size + (gap_count * space_between);
             let remainder = WIDTH - total_size_with_gaps;
@@ -259,7 +259,7 @@ impl Widget for HStack {
             }
             let mut start_point = point.clone();
             for (i, item) in self.items.iter().enumerate() {
-                item.render(dt, start_point, frame);
+                item.render(dt, start_point, frame)?;
                 start_point.x = start_point.x + item.measure().x + spaces.get(i).unwrap_or(&0.0);
             }
         }
@@ -296,7 +296,7 @@ impl Widget for VStack {
     fn render(&self, dt: &mut DrawTarget, point: Point, frame: u32) -> Result<()> {
         let mut start_point = point.clone();
         for item in self.items.iter() {
-            item.render(dt, start_point, frame);
+            item.render(dt, start_point, frame)?;
             start_point.y = start_point.y + item.measure().y + self.gap;
         }
         Ok(())
@@ -364,9 +364,6 @@ async fn render(args: &Args) -> Result<()> {
     let local: DateTime<Local> = Local::now();
     let width = 64i32;
     let height = 32i32;
-
-    // WebPConfig by default returns an unusual Yeet error,
-    // so we translate it into an anyhow error.
     let mut config = WebPConfig::new().map_err(|_s| anyhow!("WebPConfig failed"))?;
     config.lossless = 1;
     let mut encoder = AnimEncoder::new(width as u32, height as u32, &config);
@@ -377,10 +374,7 @@ async fn render(args: &Args) -> Result<()> {
     let layout = vstack![
         hstack![
             get_weather().await,
-            TextWidget::new(
-                format!("{}", local.format("%l:%M").to_string()),
-                String::from("#fff"),
-            )
+            TextWidget::new(format!("{}", local.format("%l:%M")), String::from("#fff"),)
         ],
         hstack![
             TextWidget::new(format!("{} MAIL", count), String::from("#fff")),
