@@ -135,7 +135,7 @@ impl TextWidget {
 impl Widget for TextWidget {
     fn measure(&self) -> Point {
         let width: f32 = self.text.chars().map(|x| advance(x)).sum();
-        Point::new(width, 5.0)
+        Point::new(width, 8.0)
     }
     fn frame_count(&self) -> u32 {
         1
@@ -162,7 +162,7 @@ impl ChartWidget {
 
 impl Widget for ChartWidget {
     fn measure(&self) -> Point {
-        Point::new(self.data.len() as f32, 5.0)
+        Point::new(self.data.len() as f32, 8.0)
     }
     fn frame_count(&self) -> u32 {
         1
@@ -174,9 +174,9 @@ impl Widget for ChartWidget {
         let mut pt = point.clone();
         for d in &self.data {
             let mut h = (d + 1) as f32;
-            let high = h > 5.0;
+            let high = h > 8.0;
             if high {
-                h = 5.0;
+                h = 8.0;
             }
             let color = adjusted_color(if high {
                 "#0ff"
@@ -221,7 +221,13 @@ impl HStack {
 
 impl Widget for HStack {
     fn measure(&self) -> Point {
-        Point::new(WIDTH as f32, 5.0)
+        let max_height = self
+            .items
+            .iter()
+            .map(|item| item.measure().y.round() as u32)
+            .max()
+            .unwrap_or(5) as f32;
+        Point::new(WIDTH as f32, max_height)
     }
     fn frame_count(&self) -> u32 {
         self.items
@@ -390,7 +396,7 @@ async fn render(args: &Args) -> Result<()> {
         ],
         hstack![get_aqi().await, get_uv().await]
     ]
-    .map(|s| s.set_gap(3.0));
+    .map(|s| s.set_gap(2.0));
 
     let mut frames: Vec<Vec<u8>> = Vec::new();
 
